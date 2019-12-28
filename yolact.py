@@ -1,3 +1,5 @@
+# thanks: https://github.com/Ma-Dan/yolact/tree/onnx
+
 import torch, torchvision
 import torch.nn as nn
 import torch.nn.functional as F
@@ -22,9 +24,12 @@ from utils.functions import MovingAverage, make_net
 torch.cuda.current_device()
 
 # As of March 10, 2019, Pytorch DataParallel still doesn't support JIT Script Modules
-use_jit = torch.cuda.device_count() <= 1
-if not use_jit:
-    print('Multiple GPUs detected! Turning off JIT.')
+#use_jit = torch.cuda.device_count() <= 1
+#if not use_jit:
+#    print('Multiple GPUs detected! Turning off JIT.')
+
+# We don't want modules to run as ScriptModule during tracing
+use_jit = False
 
 ScriptModuleWrapper = torch.jit.ScriptModule if use_jit else nn.Module
 script_method_wrapper = torch.jit.script_method if use_jit else lambda fn, _rcn=None: fn
@@ -221,6 +226,7 @@ class PredictionModule(nn.Module):
                 prior_data = []
 
                 # Iteration order is important (it has to sync up with the convout)
+                # Ignore ONNX warning since the loop dims are constant
                 for j, i in product(range(conv_h), range(conv_w)):
                     # +0.5 because priors are in center-size notation
                     x = (i + 0.5) / conv_w
@@ -665,9 +671,10 @@ class Yolact(nn.Module):
                 else:
                     pred_outs['conf'] = F.softmax(pred_outs['conf'], -1)
 
-            return self.detect(pred_outs, self)
+            # ONNX incompatible
+            #return self.detect(pred_outs, self)
 
-
+            return pred_outs['loc'], pred_outs['conf'], pred_outs['mask'], pred_outs['priors'], pred_outs['proto']
 
 
 # Some testing code

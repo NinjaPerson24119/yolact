@@ -128,6 +128,13 @@ dataset_base = Config({
     'label_map': None
 })
 
+arvp_general_dataset = dataset_base.copy({
+   'name':
+   'ARVP General Props',
+   # exclude train and val info, this definition is for inference only
+   'class_names': ('triangle_buoy','torpedo_target','gate')
+})
+
 coco2014_dataset = dataset_base.copy({
     'name': 'COCO 2014',
     
@@ -736,6 +743,30 @@ yolact_darknet53_config = yolact_base_config.copy({
     }),
 })
 
+yolact_darknet53_arvp_general_config = yolact_base_config.copy({
+   'name':
+   'yolact_darknet53',
+   'dataset':
+   arvp_general_dataset,
+   'num_classes':
+   len(arvp_general_dataset.class_names) + 1,
+   'backbone':
+   darknet53_backbone.copy({
+       'selected_layers':
+       list(range(2, 5)),
+       'pred_scales':
+       yolact_base_config.backbone.pred_scales,
+       'pred_aspect_ratios':
+       yolact_base_config.backbone.pred_aspect_ratios,
+       'use_pixel_scales':
+       True,
+       'preapply_sqrt':
+       False,
+       'use_square_anchors':
+       True,  # This is for backward compatability with a bug
+   }),
+})
+
 yolact_resnet50_config = yolact_base_config.copy({
     'name': 'yolact_resnet50',
 
@@ -804,7 +835,6 @@ yolact_plus_resnet50_config = yolact_plus_base_config.copy({
         'use_square_anchors': False,
     }),
 })
-
 
 # Default config
 cfg = yolact_base_config.copy()
